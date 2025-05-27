@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String   // Armazenar hash da senha, nunca a senha em texto claro!
+  role      UserRole // Define se é 'PATIENT' ou 'PROFESSIONAL'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações condicionais baseadas no 'role'
+  patientProfile   PatientProfile?    @relation("UserToPatientProfile") // Relação 1:1 para pacientes
+  professionalProfile ProfessionalProfile? @relation("UserToProfessionalProfile") // Relação 1:1 para profissionais
+
+  // Relações adicionais para funcionalidades
+  symptomRecords SymptomRecord[] // Sintomas registrados pelo usuário (seja paciente ou profissional pode registrar para si mesmo se for o caso, mas aqui entende-se paciente)
+  moodRecords    MoodRecord[]    // Humor registrado pelo usuário (paciente)
+  tasks          Task[]          // Tarefas criadas ou atribuídas a este usuário
+  messages       Message[]       // Mensagens em um chat
+  consultations  Consultation[]  // Consultas agendadas pelo/para este usuário
+  // Se você quiser que o profissional possa se auto-cadastrar e registrar tarefas, sintomas para si, etc.
+
+  @@map("users") // Nome da coleção no MongoDB
+}
+
+// Enum para o papel do usuário (Pode ser mais sofisticado, mas para começar é bom)
+enum UserRole {
+  PATIENT
+  PROFESSIONAL
+  ADMIN // Opcional, para futuros gerenciamentos
+}
+
+// Perfil específico para Pacientes
+model PatientProfile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  user        User     @relation("UserToPatientProfile", fields: [userId], references: [id])
+  // Adicione campos específicos do paciente aqui, ex:
+  // dateOfBirth DateTime?
+  // emergencyContacts Json? // Array de objetos { name: String, phone: String }
+  // otherMedicalInfo String?
+
+  assignedProfessional Professional? @relation("ProfessionalToPatients", fields: [professionalId], references: [id])
+  professionalId      String?         @db.ObjectId // Para ligar o paciente a um profissional
+
+  @@map("patient_profiles")
+}
+
+// Perfil específico para Profissionais
+model ProfessionalProfile {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  user          User     @relation("UserToProfessionalProfile", fields: [userId], references: [id])
+  // Adicione campos específicos do profissional aqui, ex:
+  // specialty     String?
+  // licenseNumber String?
+  patients      PatientProfile[] @relation("ProfessionalToPatients") // Pacientes que este profissional atende
+
+  @@map("professional_profiles")
+}
+
+// ----------------------------------------------------
+// Monitoramento de Sintomas e Emoções (para Paciente)
+// ----------------------------------------------------
+
+model SymptomRecord {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId // ID do paciente que registrou
+  user         User     @relation(fields: [userId], references: [id])
+  symptom      String   // Ex: "Ansiedade", "Insônia", "Tristeza"
+  intensity    Int      // Ex: 1-5 ou 1-10 (para escalas de avaliação)
+  notes        String?  // Detalhes adicionais sobre o sintoma
+  recordedAt   DateTime @default(now())
+
+  @@map("symptom_records")
+}
+
+model MoodRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId // ID do paciente que registrou
+  user        User     @relation(fields: [userId], references: [id])
+  mood        String   // Ex: "Feliz", "Neutro", "Triste", "Irritado"
+  description String?  // Descrição opcional do porquê do humor
+  recordedAt  DateTime @default(now())
+
+  @@map("mood_records")
+}
+
+// ----------------------------------------------------
+// Tarefas
+// ----------------------------------------------------
+
+model Task {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  assignedToId String   @db.ObjectId // ID do paciente a quem a tarefa foi atribuída
+  assignedTo  User     @relation(fields: [assignedToId], references: [id])
+  assignedById String? @db.ObjectId // Opcional: Quem atribuiu a tarefa (profissional)
+  assignedBy  User?     @relation("AssignedBy", fields: [assignedById], references: [id]) // Relação para quem atribuiu a tarefa
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+// ----------------------------------------------------
+// Consultas
+// ----------------------------------------------------
+
+model Consultation {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId    String   @db.ObjectId
+  patient      User     @relation("PatientConsultations", fields: [patientId], references: [id])
+  professionalId String   @db.ObjectId
+  professional User     @relation("ProfessionalConsultations", fields: [professionalId], references: [id])
+  startTime    DateTime
+  endTime      DateTime
+  status       ConsultationStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, CANCELLED
+  notes        String? // Notas do profissional ou paciente sobre a consulta
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("consultations")
+}
+
+enum ConsultationStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+// ----------------------------------------------------
+// Chat / Mensagens
+// ----------------------------------------------------
+
+model Message {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId // Quem enviou a mensagem
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String   @db.ObjectId // Quem recebeu a mensagem (pode ser o profissional ou paciente)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content    String
+  sentAt     DateTime @default(now())
+  read       Boolean  @default(false)
+
+  // Opcional: se quiser um chat por conversa ou "room"
+  // conversationId String @db.ObjectId
+  // conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@map("messages")
+}
+
+// ----------------------------------------------------
+// Sugestões para Melhorar o Humor (Conteúdo Fixo ou Gerenciado)
+// ----------------------------------------------------
+// Este modelo seria para um conteúdo que você ou um admin cadastraria
+model Suggestion {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  category    String?  // Ex: "Atividade", "Mindfulness", "Contato"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("suggestions")
+}
+
+// Opcional: Contatos de Emergência (pode ser hardcoded ou gerenciado no backend)
+// Se for dinâmico e para o paciente, adicione como um campo JSON no PatientProfile
+// ou crie um modelo específico para contatos de emergência do paciente
+// model EmergencyContact { ... }
