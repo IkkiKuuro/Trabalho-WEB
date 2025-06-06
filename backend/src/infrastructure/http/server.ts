@@ -1,8 +1,12 @@
-import express, { Request, Response, NextFunction, Application } from 'express';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { startApp } from '../../app';
+import logger from '../utils/logger';
 
-const app: Application = express();
-const prisma = new PrismaClient();
-
-const PORT = process.env.PORT || 3000;
+// Iniciar a aplicação
+(async () => {
+  try {
+    await startApp();
+  } catch (error) {
+    logger.error('Falha ao iniciar o servidor:', error);
+    process.exit(1);
+  }
+})();
