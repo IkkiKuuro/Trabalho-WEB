@@ -3,14 +3,13 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { errorMiddleware } from './middlewares/errorMiddleware';
-import authRoutes from './routes/authRoutes';
-import userRoutes from './routes/userRoutes';
-import pacienteRoutes from './routes/pacienteRoutes';
-import profissionalRoutes from './routes/profissionalRoutes';
-import { APP_PORT } from './utils/constants';
-import logger from './utils/logger';
-import { initializeDatabase } from './config/database';
+import { errorMiddleware } from '../http/middlewares/errorMiddleware';
+import authRoutes from '../http/routes/authRoutes';
+import userRoutes from '../http/routes/userRoutes';
+import pacienteRoutes from '../http/routes/pacienteRoutes';
+import profissionalRoutes from '../http/routes/profissionalRoutes';
+import logger from '../../utils/logger';
+import { connectToMongo } from '../persistence/mongo/mongoConnection';
 
 // Initialize Express app
 const app = express();
