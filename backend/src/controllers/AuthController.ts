@@ -1,5 +1,6 @@
 // Authentication controller
-import { Request, Response } from 'express';
+import { Request, Response } from 
+npm;
 import { LoginUserDTO } from '../dtos/auth/LoginUserDTO';
 import { RegisterUserDTO } from '../dtos/auth/RegisterUserDTO';
 import { UserResponseDTO } from '../dtos/auth/UserResponseDTO';
@@ -12,13 +13,22 @@ import { UserRole } from '../utils/constants';
 import { AppError, ValidationError } from '../utils/AppError';
 import logger from '../utils/logger';
 
+/**
+ * Controlador responsável por gerenciar autenticação e usuários
+ */
 export class AuthController {
   private userDAO: MongoUserDAO;
   private authService: BcryptJwtAuthService;
   
-  constructor() {
-    this.userDAO = new MongoUserDAO();
-    this.authService = new BcryptJwtAuthService();
+  /**
+   * Constructor com injeção de dependência
+   * @param userDAO Instância de DAO para acesso a dados de usuários
+   * @param authService Instância de serviço de autenticação
+   */
+  constructor(userDAO?: MongoUserDAO, authService?: BcryptJwtAuthService) {
+    // Se as dependências forem injetadas, use-as, caso contrário crie novas instâncias
+    this.userDAO = userDAO || new MongoUserDAO();
+    this.authService = authService || new BcryptJwtAuthService();
   }
   
   /**

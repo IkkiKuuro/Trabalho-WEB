@@ -1,11 +1,11 @@
 // User routes
 import { Router } from 'express';
-import { UserController } from '../controllers/UserController';
 import { authMiddleware, authorize } from '../middlewares/authMiddleware';
 import { UserRole } from '../utils/constants';
+import { ControllerFactory } from '../factories/ControllerFactory';
 
 const userRouter = Router();
-const userController = new UserController();
+const userController = ControllerFactory.createUserController();
 
 // Protected routes - require authentication
 userRouter.use(authMiddleware);

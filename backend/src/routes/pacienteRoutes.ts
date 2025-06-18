@@ -1,11 +1,11 @@
 // Routes for patient-specific operations
 import { Router } from 'express';
-import { PacienteController } from '../controllers/PacienteController';
 import { authMiddleware, authorize } from '../middlewares/authMiddleware';
 import { UserRole } from '../utils/constants';
+import { ControllerFactory } from '../factories/ControllerFactory';
 
 const pacienteRouter = Router();
-const pacienteController = new PacienteController();
+const pacienteController = ControllerFactory.createPacienteController();
 
 // All routes require authentication
 pacienteRouter.use(authMiddleware);

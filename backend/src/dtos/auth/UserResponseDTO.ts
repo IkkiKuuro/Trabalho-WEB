@@ -1,43 +1,44 @@
-// DTO para resposta de usuário (após autenticação)
 import { UserRole } from '../../utils/constants';
 
+/**
+ * DTO para resposta de usuário
+ * Responsável por transportar os dados de resposta entre camadas
+ */
 export class UserResponseDTO {
   id: string;
   nome: string;
   email: string;
   tipo: UserRole;
   token?: string;
-  
-  // Campos adicionais específicos para cada tipo
-  dataNascimento?: Date;
-  cpf?: string;
-  crm?: string;
-  especialidade?: string;
+  profile?: any; // Pode ser tipado conforme necessário
 
+  /**
+   * @param data Dados do usuário
+   */
   constructor(data: {
     id: string;
     nome: string;
     email: string;
     tipo: UserRole;
     token?: string;
-    dataNascimento?: Date;
-    cpf?: string;
-    crm?: string;
-    especialidade?: string;
+    profile?: any;
   }) {
     this.id = data.id;
     this.nome = data.nome;
     this.email = data.email;
     this.tipo = data.tipo;
     this.token = data.token;
-    
-    // Adiciona campos específicos por tipo
-    if (data.tipo === UserRole.PACIENTE) {
-      this.dataNascimento = data.dataNascimento;
-      this.cpf = data.cpf;
-    } else if (data.tipo === UserRole.PROFISSIONAL) {
-      this.crm = data.crm;
-      this.especialidade = data.especialidade;
-    }
+    this.profile = data.profile;
+  }
+  
+  /**
+   * Transforma o DTO em um objeto JSON para resposta HTTP
+   * @returns Objeto JSON limpo
+   */
+  toJSON() {
+    // Remove campos undefined e null
+    return Object.fromEntries(
+      Object.entries(this).filter(([_, v]) => v != null)
+    );
   }
 }

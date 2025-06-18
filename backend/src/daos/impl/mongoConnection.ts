@@ -1,36 +1,57 @@
-// MongoDB connection helper
-import { MongoClient } from 'mongodb';
+import { MongoClient, Db } from 'mongodb';
 import logger from '../../utils/logger';
-import { DATABASE_URL } from '../../utils/constants';
 
-let db;
-let client;
+// Variáveis para armazenar a conexão
+let client: MongoClient;
+let db: Db;
 
-export async function connectToMongo() {
+// URL de conexão com o MongoDB (pode vir de variável de ambiente)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/saude_mental';
+const DB_NAME = process.env.DB_NAME || 'saude_mental';
+
+/**
+ * Inicializa a conexão com o MongoDB
+ * @returns Instância do banco de dados MongoDB
+ */
+export async function initMongoDB(): Promise<Db> {
   try {
-    client = new MongoClient(DATABASE_URL);
+    // Se já existe uma conexão, retorna
+    if (db) {
+      return db;
+    }
+    
+    // Conecta ao MongoDB
+    client = new MongoClient(MONGO_URI);
     await client.connect();
     
-    db = client.db('saude-mental');
-    logger.info('Connected to MongoDB successfully');
+    // Obtém referência ao banco de dados
+    db = client.db(DB_NAME);
     
+    logger.info('Conectado ao MongoDB com sucesso');
     return db;
   } catch (error) {
-    logger.error(`MongoDB connection error: ${error.message}`);
-    process.exit(1);
+    logger.error(`Erro ao conectar ao MongoDB: ${error}`);
+    throw new Error('Falha ao conectar ao MongoDB');
   }
 }
 
-export function getMongoDb() {
+/**
+ * Obtém a instância do banco de dados MongoDB
+ * @returns Instância do banco de dados MongoDB
+ */
+export function getMongoDb(): Db {
   if (!db) {
-    throw new Error('Database not initialized. Call connectToMongo first.');
+    throw new Error('MongoDB não foi inicializado. Chame initMongoDB primeiro.');
   }
   return db;
 }
 
-export function closeMongoConnection() {
+/**
+ * Fecha a conexão com o MongoDB
+ */
+export async function closeMongoDB(): Promise<void> {
   if (client) {
-    client.close();
-    logger.info('MongoDB connection closed');
+    await client.close();
+    logger.info('Conexão com MongoDB fechada');
   }
 }

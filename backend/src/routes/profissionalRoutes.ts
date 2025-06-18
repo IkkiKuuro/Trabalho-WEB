@@ -1,11 +1,11 @@
 // Routes for professional-specific operations
 import { Router } from 'express';
-import { ProfissionalController } from '../controllers/ProfissionalController';
 import { authMiddleware, authorize } from '../middlewares/authMiddleware';
 import { UserRole } from '../utils/constants';
+import { ControllerFactory } from '../factories/ControllerFactory';
 
 const profissionalRouter = Router();
-const profissionalController = new ProfissionalController();
+const profissionalController = ControllerFactory.createProfissionalController();
 
 // All routes require authentication
 profissionalRouter.use(authMiddleware);

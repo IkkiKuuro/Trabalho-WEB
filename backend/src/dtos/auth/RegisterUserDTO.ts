@@ -1,65 +1,63 @@
-// DTO para registro de usuário
 import { UserRole } from '../../utils/constants';
 
+/**
+ * DTO para registro de novo usuário
+ * Responsável por transportar os dados de registro entre camadas
+ */
 export class RegisterUserDTO {
   nome: string;
   email: string;
   password: string;
   tipo: UserRole;
-  // Campos específicos para pacientes
-  dataNascimento?: Date;
-  cpf?: string;
-  contatoEmergencia?: string;
-  // Campos específicos para profissionais
-  crm?: string;
-  especialidade?: string;
 
-  constructor(data: {
-    nome: string;
-    email: string;
-    password: string;
-    tipo: UserRole;
-    dataNascimento?: Date;
-    cpf?: string;
-    contatoEmergencia?: string;
-    crm?: string;
-    especialidade?: string;
-  }) {
+  /**
+   * @param data Dados de registro
+   */
+  constructor(data: { nome: string; email: string; password: string; tipo: UserRole }) {
     this.nome = data.nome;
     this.email = data.email;
     this.password = data.password;
     this.tipo = data.tipo;
     
-    // Campos específicos dependendo do tipo
-    if (data.tipo === UserRole.PACIENTE) {
-      this.dataNascimento = data.dataNascimento;
-      this.cpf = data.cpf;
-      this.contatoEmergencia = data.contatoEmergencia;
-    } else if (data.tipo === UserRole.PROFISSIONAL) {
-      this.crm = data.crm;
-      this.especialidade = data.especialidade;
-    }
+    // Validação básica
+    this.validate();
   }
-
-  // Método para validar os dados de registro
-  validate(): string[] {
-    const errors: string[] = [];
-
-    if (!this.nome) errors.push('Nome é obrigatório');
-    if (!this.email) errors.push('Email é obrigatório');
-    if (!this.password) errors.push('Senha é obrigatória');
-    if (this.password && this.password.length < 6) 
-      errors.push('Senha deve ter pelo menos 6 caracteres');
-
-    // Validações específicas para cada tipo de usuário
-    if (this.tipo === UserRole.PACIENTE) {
-      if (!this.dataNascimento) errors.push('Data de nascimento é obrigatória para pacientes');
-      if (!this.cpf) errors.push('CPF é obrigatório para pacientes');
-    } else if (this.tipo === UserRole.PROFISSIONAL) {
-      if (!this.crm) errors.push('CRM é obrigatório para profissionais');
-      if (!this.especialidade) errors.push('Especialidade é obrigatória para profissionais');
+  
+  /**
+   * Valida os dados de registro
+   * @throws Error se os dados forem inválidos
+   */
+  private validate(): void {
+    if (!this.nome) {
+      throw new Error('Nome é obrigatório');
     }
-
-    return errors;
+    
+    if (!this.email) {
+      throw new Error('Email é obrigatório');
+    }
+    
+    if (!this.password) {
+      throw new Error('Senha é obrigatória');
+    }
+    
+    if (!this.tipo) {
+      throw new Error('Tipo de usuário é obrigatório');
+    }
+    
+    // Validação de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.email)) {
+      throw new Error('Email inválido');
+    }
+    
+    // Validação de senha
+    if (this.password.length < 6) {
+      throw new Error('A senha deve ter pelo menos 6 caracteres');
+    }
+    
+    // Validação de tipo de usuário
+    if (!Object.values(UserRole).includes(this.tipo)) {
+      throw new Error('Tipo de usuário inválido');
+    }
   }
 }
